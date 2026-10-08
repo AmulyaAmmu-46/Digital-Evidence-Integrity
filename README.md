@@ -47,9 +47,9 @@ The seed command creates missing database tables and prompts for administrator c
 The application listens on `0.0.0.0:5000` by default. Set `HOST` or `PORT` in the environment to override those values.
 
 ## Docker Setup (Local)
-1. Copy `.env.example` to `.env`; set a random `SECRET_KEY` and a strong `POSTGRES_PASSWORD` there.
+1. Copy `.env.example` to `.env`; set a random `SECRET_KEY` and a strong `POSTGRES_PASSWORD` there. Keep the same `SECRET_KEY` when restarting or recreating the container: all Gunicorn workers must use the same key to preserve login sessions. `.env` is local configuration and must not be committed.
 2. Run `docker-compose up --build -d`.
-3. For a new database, create the administrator with `docker-compose exec web python scripts/seed.py` and enter your credentials when prompted.
+3. For a new database, create the administrator with `docker-compose exec web python -m scripts.seed` and enter your credentials when prompted.
 4. For an existing database upgraded from an older version, run `docker-compose exec web python scripts/upgrade_case_viewer_grants.py` once.
 5. Access the application at `http://localhost:5000`.
 
@@ -57,9 +57,10 @@ To run the image directly with local SQLite instead of Compose/PostgreSQL:
 
 ```powershell
 docker build -t cloud-evidence:local .
+$secret = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(48))
 docker run --rm --name cloud-evidence -p 5000:5000 `
   -e APP_ENV=development `
-  -e SECRET_KEY=replace-with-a-random-local-secret `
+  -e "SECRET_KEY=$secret" `
   -e DATABASE_URI=sqlite:////app/data/forensics.db `
   -e UPLOAD_FOLDER=/app/uploads `
   -v evidence_database:/app/data `
@@ -70,7 +71,7 @@ docker run --rm --name cloud-evidence -p 5000:5000 `
 In another terminal, create the initial schema and administrator account:
 
 ```powershell
-docker exec -it cloud-evidence python scripts/seed.py
+docker exec -it cloud-evidence python -m scripts.seed
 ```
 
 ## Azure Container Registry (ACR) Instructions
