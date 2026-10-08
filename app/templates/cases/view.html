@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Case Details{% endblock %}
+{% block header %}Case Details: {{ case.case_id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0">Information</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.role == 'ADMIN' or (current_user.role == 'INVESTIGATOR' and (case.created_by == current_user.id or case.assigned_to == current_user.id)) %}
+                <div class="d-flex gap-2 mb-3">
+                    <a href="{{ url_for('cases.edit', id=case.id) }}" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen-to-square me-1"></i>Edit case</a>
+                </div>
+                {% endif %}
+                <p><strong>Title:</strong> {{ case.title }}</p>
+                <p><strong>Category:</strong> {{ case.category }}</p>
+                <p><strong>Priority:</strong> <span class="badge bg-info">{{ case.priority }}</span></p>
+                <p><strong>Status:</strong> <span class="badge bg-warning">{{ case.status }}</span></p>
+                <p><strong>Created By:</strong> {{ case.creator.full_name if case.creator else 'Unknown' }}</p>
+                <p><strong>Created At:</strong> {{ case.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                <hr class="border-secondary">
+                <h6>Description</h6>
+                <p class="text-muted">{{ case.description }}</p>
+                {% if current_user.role == 'ADMIN' %}
+                <hr class="border-secondary">
+                <form method="POST" action="{{ url_for('cases.assign', id=case.id) }}" class="d-flex gap-2 align-items-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="flex-grow-1">
+                        <label for="assigned_to" class="form-label">Assigned investigator</label>
+                        <select name="assigned_to" id="assigned_to" class="form-select bg-dark text-light border-secondary">
+                            <option value="">Unassigned</option>
+                            {% for investigator in investigators %}
+                            <option value="{{ investigator.id }}" {% if case.assigned_to == investigator.id %}selected{% endif %}>{{ investigator.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary">Save assignment</button>
+                </form>
+                <form method="POST" action="{{ url_for('cases.update_viewers', id=case.id) }}" class="mt-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="viewer_ids" class="form-label">Authorized viewers</label>
+                    <select name="viewer_ids" id="viewer_ids" class="form-select bg-dark text-light border-secondary" multiple size="3">
+                        {% for viewer in viewers %}
+                        <option value="{{ viewer.id }}" {% if viewer.id in viewer_grant_ids %}selected{% endif %}>{{ viewer.full_name }} ({{ viewer.email }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-outline-info mt-2">Save viewer access</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-dark text-light border-bottom border-secondary d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Evidence</h5>
+                {% if current_user.role in ['ADMIN', 'INVESTIGATOR'] %}
+                <a href="{{ url_for('evidence.upload', case_id=case.id) }}" class="btn btn-sm btn-primary"><i class="fa-solid fa-upload me-2"></i>Upload Evidence</a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Evidence ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ev in case.evidence %}
+                            <tr>
+                                <td>{{ ev.evidence_id }}</td>
+                                <td>{{ ev.name }}</td>
+                                <td>{{ ev.evidence_type }}</td>
+                                <td><span class="badge {% if ev.status == 'VERIFIED' %}badge-verified{% else %}bg-info{% endif %}">{{ ev.status }}</span></td>
+                                <td>
+                                    <a href="{{ url_for('evidence.view', id=ev.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center">No evidence attached to this case.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

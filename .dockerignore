@@ -1,0 +1,15 @@
+.env*
+!.env.example
+.git/
+.pytest_cache/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+instance/*.db
+*.db
+data/
+uploads/*
+!uploads/.keep
+tests/
+.pytest_cache/

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Evidence{% endblock %}
+{% block header %}Evidence Repository{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <form class="d-flex w-50" method="GET" action="{{ url_for('evidence.index') }}">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control bg-dark text-light border-secondary" placeholder="Search evidence by ID or name..." value="{{ query }}">
+            <button class="btn btn-outline-secondary" type="submit"><i class="fa-solid fa-search"></i></button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Evidence ID</th>
+                        <th>Name</th>
+                        <th>Case ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Uploaded</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in evidence %}
+                    <tr>
+                        <td>{{ ev.evidence_id }}</td>
+                        <td>{{ ev.name }}</td>
+                        <td><a href="{{ url_for('cases.view', id=ev.case_db_id) }}" class="text-info text-decoration-none">{{ ev.case.case_id }}</a></td>
+                        <td>{{ ev.evidence_type }}</td>
+                        <td><span class="badge {% if ev.status == 'VERIFIED' %}badge-verified{% else %}bg-info{% endif %}">{{ ev.status }}</span></td>
+                        <td>{{ ev.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <a href="{{ url_for('evidence.view', id=ev.id) }}" class="btn btn-sm btn-outline-info">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center">No evidence found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

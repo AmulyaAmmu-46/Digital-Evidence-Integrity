@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Upload Evidence{% endblock %}
+{% block header %}Upload Evidence to Case: {{ case.case_id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('evidence.upload', case_id=case.id) }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Evidence Name</label>
+                        <input type="text" name="name" class="form-control bg-dark text-light border-secondary" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Evidence File</label>
+                        <input type="file" name="file" class="form-control bg-dark text-light border-secondary" required>
+                        <div class="form-text text-muted">Max size: 50MB. Safe formats only. SHA-256 will be calculated automatically.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Evidence Type</label>
+                            <select name="evidence_type" class="form-select bg-dark text-light border-secondary" required>
+                                <option value="Image">Image</option>
+                                <option value="Video">Video</option>
+                                <option value="Audio">Audio</option>
+                                <option value="Document">Document</option>
+                                <option value="Log">Log</option>
+                                <option value="Archive">Archive</option>
+                                <option value="Network Capture">Network Capture</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Source / Origin</label>
+                            <input type="text" name="source" class="form-control bg-dark text-light border-secondary">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description / Notes</label>
+                        <textarea name="description" class="form-control bg-dark text-light border-secondary" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-3">
+                        <a href="{{ url_for('cases.view', id=case.id) }}" class="btn btn-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-upload me-2"></i>Upload Securely</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

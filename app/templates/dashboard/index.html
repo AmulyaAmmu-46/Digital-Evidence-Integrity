@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block header %}Security Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    {% if current_user.role == 'ADMIN' %}
+    <div class="col-md-3">
+        <div class="card text-center mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-primary"><i class="fa-solid fa-folder-open"></i> Total Cases</h5>
+                <h2 class="card-text">{{ total_cases }}</h2>
+                <small class="text-muted">{{ open_cases }} Open | {{ closed_cases }} Closed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-info"><i class="fa-solid fa-file-shield"></i> Total Evidence</h5>
+                <h2 class="card-text">{{ total_evidence }}</h2>
+                <small class="text-muted">{{ verified_evidence }} Verified</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Integrity Failures</h5>
+                <h2 class="card-text">{{ integrity_failures }}</h2>
+                <small class="text-muted">Requires Attention</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3">
+            <div class="card-body">
+                <h5 class="card-title text-success"><i class="fa-solid fa-users"></i> Investigators</h5>
+                <h2 class="card-text">{{ active_investigators }}</h2>
+                <small class="text-muted">Active Users</small>
+            </div>
+        </div>
+    </div>
+    {% elif current_user.role == 'INVESTIGATOR' %}
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-primary"><i class="fa-solid fa-folder-open"></i> My Cases</h5><h2>{{ my_cases }}</h2></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-info"><i class="fa-solid fa-user-check"></i> Assigned Cases</h5><h2>{{ assigned_cases }}</h2></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-success"><i class="fa-solid fa-file-shield"></i> My Evidence</h5><h2>{{ my_evidence }}</h2></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-warning"><i class="fa-solid fa-hourglass-half"></i> Pending Verification</h5><h2>{{ pending_verification }}</h2></div></div>
+    </div>
+    {% elif current_user.role == 'AUDITOR' %}
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-primary"><i class="fa-solid fa-folder-open"></i> Cases for Audit</h5><h2>{{ total_cases }}</h2></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-info"><i class="fa-solid fa-file-shield"></i> Evidence</h5><h2>{{ total_evidence }}</h2></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-success"><i class="fa-solid fa-check-double"></i> Verified</h5><h2>{{ verified_evidence }}</h2></div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Integrity Failures</h5><h2>{{ integrity_failures }}</h2></div></div>
+    </div>
+    {% else %}
+    <div class="col-md-6">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-primary"><i class="fa-solid fa-folder-open"></i> Authorized Cases</h5><h2>{{ total_cases }}</h2></div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card text-center mb-3"><div class="card-body"><h5 class="card-title text-info"><i class="fa-solid fa-file-shield"></i> Authorized Evidence</h5><h2>{{ total_evidence }}</h2></div></div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0">Recent Cases</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for case in recent_cases %}
+                            <tr>
+                                <td><a href="{{ url_for('cases.view', id=case.id) }}" class="text-info text-decoration-none">{{ case.case_id }}</a></td>
+                                <td>{{ case.title }}</td>
+                                <td><span class="badge {% if case.status == 'OPEN' %}bg-warning{% elif case.status == 'CLOSED' %}bg-secondary{% else %}bg-primary{% endif %}">{{ case.status }}</span></td>
+                                <td>{{ case.priority }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center">No cases found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0">Recent Evidence</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Evidence ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ev in recent_evidence %}
+                            <tr>
+                                <td><a href="{{ url_for('evidence.view', id=ev.id) }}" class="text-info text-decoration-none">{{ ev.evidence_id }}</a></td>
+                                <td>{{ ev.name }}</td>
+                                <td>{{ ev.evidence_type }}</td>
+                                <td><span class="badge {% if ev.status == 'VERIFIED' %}badge-verified{% elif ev.status == 'UPLOADED' %}bg-info{% else %}bg-secondary{% endif %}">{{ ev.status }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center">No evidence found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% if current_user.role in ['ADMIN', 'AUDITOR'] %}
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-light border-bottom border-secondary"><h5 class="mb-0">Recent Audit Activity</h5></div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Result</th></tr></thead>
+                    <tbody>
+                        {% for item in recent_activity %}
+                        <tr><td>{{ item.timestamp.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ item.user.full_name if item.user else 'System' }}</td><td>{{ item.action }}</td><td>{{ item.result }}</td></tr>
+                        {% else %}<tr><td colspan="4" class="text-center text-muted">No activity recorded.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-light border-bottom border-secondary"><h5 class="mb-0">Recent Chain-of-Custody Activity</h5></div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Time</th><th>Evidence</th><th>Action</th><th>Performed by</th></tr></thead>
+                    <tbody>
+                        {% for event in recent_custody %}
+                        <tr><td>{{ event.timestamp.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ event.evidence.evidence_id }}</td><td>{{ event.action }}</td><td>{{ event.performed_by_user.full_name }}</td></tr>
+                        {% else %}<tr><td colspan="4" class="text-center text-muted">No custody events recorded.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% elif current_user.role == 'INVESTIGATOR' %}
+<div class="card mb-4">
+    <div class="card-header bg-dark text-light border-bottom border-secondary"><h5 class="mb-0">My Recent Activity</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0"><thead><tr><th>Time</th><th>Action</th><th>Resource</th><th>Result</th></tr></thead>
+            <tbody>{% for item in recent_activity %}<tr><td>{{ item.timestamp.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ item.action }}</td><td>{{ item.resource_type }}</td><td>{{ item.result }}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted">No activity recorded.</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}User Accounts{% endblock %}
+{% block header %}User Accounts{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-xl-4 col-lg-5">
+        <section class="card h-100">
+            <div class="card-header border-secondary py-3">
+                <h2 class="h5 mb-0">Create account</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('users.index') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full name</label>
+                        <input type="text" class="form-control bg-dark text-light border-secondary" id="full_name" name="full_name" maxlength="100" autocomplete="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control bg-dark text-light border-secondary" id="email" name="email" maxlength="120" autocomplete="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select bg-dark text-light border-secondary" id="role" name="role" required>
+                            <option value="" selected disabled>Select a role</option>
+                            {% for role in account_roles %}
+                            <option value="{{ role }}">{{ role.title() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Temporary password</label>
+                        <input type="password" class="form-control bg-dark text-light border-secondary" id="password" name="password" minlength="12" maxlength="72" autocomplete="new-password" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password_confirmation" class="form-label">Confirm password</label>
+                        <input type="password" class="form-control bg-dark text-light border-secondary" id="password_confirmation" name="password_confirmation" minlength="12" maxlength="72" autocomplete="new-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa-solid fa-user-plus me-2"></i>Create account
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div class="col-xl-8 col-lg-7">
+        <section class="card">
+            <div class="card-header border-secondary py-3 d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Accounts</h2>
+                <span class="badge text-bg-secondary">{{ users|length }}</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Manage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.full_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>{{ user.role.title() }}</td>
+                            <td>
+                                <span class="badge {{ 'text-bg-success' if user.is_active else 'text-bg-secondary' }}">
+                                    {{ 'Active' if user.is_active else 'Disabled' }}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('users.update', user_id=user.id) }}" class="d-flex gap-2 align-items-center">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <select name="role" class="form-select form-select-sm bg-dark text-light border-secondary" aria-label="Role for {{ user.email }}">
+                                        {% for role in account_roles %}
+                                        <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>{{ role.title() }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input type="hidden" name="is_active" value="false">
+                                    <input type="checkbox" name="is_active" value="true" class="form-check-input" aria-label="Active status for {{ user.email }}" {% if user.is_active %}checked{% endif %}>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No accounts found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Request Error{% endblock %}
+{% block header %}Request Error{% endblock %}
+{% block content %}
+<div class="text-center mt-5">
+    <h1 class="display-1 text-warning">{{ status_code }}</h1>
+    <p class="lead">{{ message }}</p>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Return to Dashboard</a>
+</div>
+{% endblock %}

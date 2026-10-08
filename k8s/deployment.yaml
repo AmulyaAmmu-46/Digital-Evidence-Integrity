@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forensics-app
+  namespace: digital-forensics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forensics
+  template:
+    metadata:
+      labels:
+        app: forensics
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: forensics-app
+          image: cyberforensicsacr.azurecr.io/digital-forensics-platform:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: forensics-config
+            - secretRef:
+                name: forensics-secrets
+          volumeMounts:
+            - name: evidence-storage
+              mountPath: /app/uploads
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: evidence-storage
+          persistentVolumeClaim:
+            claimName: evidence-pvc

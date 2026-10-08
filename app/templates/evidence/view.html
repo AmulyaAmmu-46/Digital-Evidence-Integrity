@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Evidence Details{% endblock %}
+{% block header %}Evidence: {{ evidence.evidence_id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-5">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-light border-bottom border-secondary">
+                <h5 class="mb-0">Evidence Metadata</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ evidence.name }}</p>
+                <p><strong>Case:</strong> <a href="{{ url_for('cases.view', id=evidence.case_db_id) }}" class="text-info text-decoration-none">{{ evidence.case.case_id }}</a></p>
+                <p><strong>Type:</strong> {{ evidence.evidence_type }}</p>
+                <p><strong>Original File:</strong> {{ evidence.original_filename }}</p>
+                <p><strong>Size:</strong> {{ (evidence.file_size / 1024 / 1024)|round(2) }} MB</p>
+                <p><strong>Source:</strong> {{ evidence.source }}</p>
+                <p><strong>Collected By:</strong> {{ evidence.collector.full_name if evidence.collector else 'Unknown' }}</p>
+                <p><strong>Uploaded At:</strong> {{ evidence.upload_timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                
+                <hr class="border-secondary">
+                <h6>Integrity Information</h6>
+                <p><strong>SHA-256 Hash:</strong><br>
+                    <small class="text-info font-monospace text-break">{{ evidence.sha256_hash }}</small>
+                </p>
+                <p><strong>Status:</strong> 
+                    <span class="badge {% if evidence.status == 'VERIFIED' %}badge-verified{% else %}bg-warning{% endif %}">{{ evidence.status }}</span>
+                </p>
+
+                <div class="d-flex gap-2 mt-4">
+                    {% if current_user.role in ['ADMIN', 'INVESTIGATOR', 'AUDITOR'] %}
+                    <form method="POST" action="{{ url_for('evidence.verify', id=evidence.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-success"><i class="fa-solid fa-check-double me-1"></i> Verify</button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if current_user.role in ['ADMIN', 'INVESTIGATOR'] %}
+                    <a href="{{ url_for('evidence.download', id=evidence.id) }}" class="btn btn-outline-primary"><i class="fa-solid fa-download me-1"></i> Download</a>
+                    {% endif %}
+                </div>
+                {% if current_user.role in ['ADMIN', 'INVESTIGATOR'] and transfer_targets|length > 1 %}
+                <form method="POST" action="{{ url_for('evidence.transfer', id=evidence.id) }}" class="mt-4 pt-3 border-top border-secondary">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label for="new_custodian" class="form-label">Transfer to</label>
+                            <select id="new_custodian" name="new_custodian" class="form-select bg-dark text-light border-secondary" required>
+                                {% for user in transfer_targets %}
+                                {% if user.id != current_custodian_id %}
+                                <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="reason" class="form-label">Transfer reason</label>
+                            <input type="text" id="reason" name="reason" maxlength="500" class="form-control bg-dark text-light border-secondary" required>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-outline-warning"><i class="fa-solid fa-right-left me-1"></i>Transfer</button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-7">
+        <!-- Chain of Custody Timeline -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-light border-bottom border-secondary d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Chain of Custody</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline position-relative border-start border-secondary ms-3 ps-3">
+                    {% for event in evidence.custody_events|sort(attribute='timestamp') %}
+                    <div class="mb-4 position-relative">
+                        <i class="fa-solid fa-circle position-absolute text-primary" style="left: -1.4rem; top: 0.2rem; font-size: 0.8rem;"></i>
+                        <h6 class="mb-1 text-light">{{ event.action }}</h6>
+                        <small class="text-muted d-block mb-2">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') }} - by {{ event.performed_by_user.full_name }}</small>
+                        <p class="mb-0 small">{{ event.reason }}</p>
+                        {% if event.notes %}
+                        <p class="mb-0 small text-info fst-italic">{{ event.notes }}</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No custody events recorded.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
