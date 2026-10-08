@@ -16,7 +16,7 @@ The application follows a modular, cloud-native architecture:
 ## Cloud/DevOps Workflow
 This project is designed for modern cloud deployments:
 1.  **Version Control:** Git & GitHub.
-2.  **CI/CD (Jenkins):** A Jenkins pipeline (`Jenkinsfile`) automates checking out code, installing dependencies, running `pytest`, building the Docker image, and pushing to a registry.
+2.  **CI/CD (Jenkins):** A Windows Jenkins pipeline (`Jenkinsfile`) runs Python tests and Trivy scans in Linux containers, builds the Docker image, and deploys it to Azure Container Registry and Kubernetes.
 3.  **Containerization (Docker):** A lightweight `Dockerfile` uses Gunicorn to serve the Flask app securely via a non-root user. `docker-compose.yml` provides easy local orchestration.
 4.  **Container Registry (Azure ACR):** Images are pushed to Azure Container Registry.
 5.  **Orchestration (Kubernetes):** Declarative YAML manifests (`k8s/`) handle Namespaces, ConfigMaps, Secrets, PVCs, Deployments, Services, and Ingress routing for scalable deployment (e.g., on Azure Kubernetes Service - AKS).
@@ -28,6 +28,17 @@ This project is designed for modern cloud deployments:
 *   **Integrity Verification:** On-demand recalculation of evidence hashes to detect tampering.
 *   **Chain of Custody:** Immutable timeline tracking all evidence lifecycle events.
 *   **Audit Logging:** Centralized tracking of authentication, resource access, and system events.
+
+## Jenkins Setup (Windows)
+The Jenkins pipeline targets a Windows executor labeled `windows-docker`. Configure that label on the Windows node; do not label it `linux-docker`. The Jenkins service account must be able to use Docker Desktop's Linux-container engine and `kubectl`, and its Kubernetes context must have permission to deploy to the `digital-forensics` namespace. Python and Trivy are run as containers, so they do not need to be installed on the Jenkins host.
+
+Add these Jenkins credentials with the IDs used by `Jenkinsfile`:
+
+* `acr-credentials`: Azure Container Registry username and password.
+* `forensics-secret-key`: a secret text credential with at least 32 characters.
+* `forensics-database-uri`: a PostgreSQL connection URI.
+
+The ACR registry must exist, and the Kubernetes cluster must be configured to pull images from it. Ensure the Jenkins service account can access the Docker daemon and Kubernetes configuration; tools available only to an interactive desktop user may not be available to the Jenkins service.
 
 ## Local Setup (Without Docker)
 In PowerShell, run from the project directory. For a first-time setup, create a virtual environment, install dependencies, and create the administrator account before starting the server:
