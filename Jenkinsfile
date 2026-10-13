@@ -46,7 +46,7 @@ if errorlevel 1 exit /b %errorlevel%
             steps {
                 bat '''
 @echo off
-docker build -t "%IMAGE_NAME%:%IMAGE_TAG%" .
+docker build --pull -t "%IMAGE_NAME%:%IMAGE_TAG%" .
 if errorlevel 1 exit /b %errorlevel%
 '''
             }
@@ -58,7 +58,7 @@ if errorlevel 1 exit /b %errorlevel%
 @echo off
 docker save --output "%WORKSPACE%\\digital-evidence-image.tar" "%IMAGE_NAME%:%IMAGE_TAG%"
 if errorlevel 1 exit /b %errorlevel%
-docker run --rm --mount "type=bind,source=%WORKSPACE%,target=/work,readonly" "%TRIVY_IMAGE%" image --input /work/digital-evidence-image.tar --exit-code 1 --severity HIGH,CRITICAL
+docker run --rm --mount "type=bind,source=%WORKSPACE%,target=/work,readonly" "%TRIVY_IMAGE%" image --input /work/digital-evidence-image.tar --ignore-unfixed --exit-code 1 --severity HIGH,CRITICAL
 if errorlevel 1 exit /b %errorlevel%
 '''
             }

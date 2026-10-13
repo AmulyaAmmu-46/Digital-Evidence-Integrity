@@ -30,7 +30,7 @@ This project is designed for modern cloud deployments:
 *   **Audit Logging:** Centralized tracking of authentication, resource access, and system events.
 
 ## Jenkins Setup (Windows)
-The Jenkins pipeline targets a Windows executor labeled `windows-docker`. Configure that label on the Windows node; do not label it `linux-docker`. The Jenkins service account must be able to use Docker Desktop's Linux-container engine and `kubectl`, and its Kubernetes context must have permission to deploy to the `digital-forensics` namespace. Python and Trivy are run as containers, so they do not need to be installed on the Jenkins host.
+The Jenkins pipeline targets a Windows executor labeled `windows-docker`. Configure that label on the Windows node; do not label it `linux-docker`. The Jenkins service account must be able to use Docker Desktop's Linux-container engine and `kubectl`, and its Kubernetes context must have permission to deploy to the `digital-forensics` namespace. Python and Trivy are run as containers, so they do not need to be installed on the Jenkins host. The build pulls the latest configured base image and Trivy blocks HIGH or CRITICAL findings when a fixed version is available; findings without an available fix do not block deployment.
 
 Add these Jenkins credentials with the IDs used by `Jenkinsfile`:
 
