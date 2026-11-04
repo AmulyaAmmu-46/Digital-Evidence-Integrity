@@ -11,7 +11,13 @@
             </div>
             <div class="card-body">
                 <p><strong>Name:</strong> {{ evidence.name }}</p>
-                <p><strong>Case:</strong> <a href="{{ url_for('cases.view', id=evidence.case_db_id) }}" class="text-info text-decoration-none">{{ evidence.case.case_id }}</a></p>
+                <p><strong>Case:</strong>
+                    {% if can_view_parent_case %}
+                    <a href="{{ url_for('cases.view', id=evidence.case_db_id) }}" class="text-info text-decoration-none">{{ evidence.case.case_id }}</a>
+                    {% else %}
+                    {{ evidence.case.case_id }}
+                    {% endif %}
+                </p>
                 <p><strong>Type:</strong> {{ evidence.evidence_type }}</p>
                 <p><strong>Original File:</strong> {{ evidence.original_filename }}</p>
                 <p><strong>Size:</strong> {{ (evidence.file_size / 1024 / 1024)|round(2) }} MB</p>

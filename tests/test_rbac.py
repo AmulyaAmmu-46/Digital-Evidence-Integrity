@@ -392,6 +392,73 @@ def test_investigator_transfers_evidence_between_authorized_case_users(isolated_
     assert AuditLog.query.filter_by(resource_id=evidence.id, action='EVIDENCE_TRANSFERRED').one()
 
 
+def test_transferred_custodian_gets_evidence_only_access(isolated_case_app):
+    app, users, _, source_evidence = isolated_case_app
+    with app.app_context():
+        case = Case(
+            case_id='CASE-2026-0002',
+            title='Evidence-only transfer',
+            category='Cyber Incident',
+            created_by=users['investigator_a'].id,
+            assigned_to=users['investigator_a'].id,
+        )
+        db.session.add(case)
+        db.session.flush()
+        evidence = Evidence(
+            evidence_id='EVD-2026-0002',
+            case_db_id=case.id,
+            name='Transferred log',
+            original_filename='network.txt',
+            evidence_type='Log',
+            file_size=source_evidence.file_size,
+            collected_by=users['investigator_a'].id,
+            sha256_hash=source_evidence.sha256_hash,
+            storage_path=source_evidence.storage_path,
+        )
+        db.session.add(evidence)
+        db.session.flush()
+        db.session.add(CustodyEvent(
+            evidence_db_id=evidence.id,
+            case_db_id=case.id,
+            action='EVIDENCE_UPLOADED',
+            performed_by=users['investigator_a'].id,
+            new_custodian=users['investigator_a'].id,
+            reason='Initial collection',
+        ))
+        db.session.commit()
+        case_id = case.id
+        evidence_id = evidence.id
+
+    investigator_a_client = app.test_client()
+    sign_in(investigator_a_client, users['investigator_a'])
+    transfer_to_b = investigator_a_client.post(f'/evidence/{evidence_id}/transfer', data={
+        'new_custodian': users['investigator_b'].id,
+        'reason': 'Assigned for independent analysis',
+    })
+    assert transfer_to_b.status_code == 302
+
+    investigator_b_client = app.test_client()
+    sign_in(investigator_b_client, users['investigator_b'])
+    assert investigator_b_client.get(f'/cases/{case_id}').status_code == 404
+    evidence_page = investigator_b_client.get(f'/evidence/{evidence_id}')
+    assert evidence_page.status_code == 200
+    assert b'EVD-2026-0002' in investigator_b_client.get('/evidence/').data
+    assert f'href="/cases/{case_id}"'.encode() not in evidence_page.data
+    download = investigator_b_client.get(f'/evidence/{evidence_id}/download')
+    assert download.status_code == 200
+    with open(source_evidence.storage_path, 'rb') as stored_file:
+        assert download.data == stored_file.read()
+    assert investigator_b_client.post(f'/evidence/{evidence_id}/verify').status_code == 302
+
+    transfer_back = investigator_b_client.post(f'/evidence/{evidence_id}/transfer', data={
+        'new_custodian': users['investigator_a'].id,
+        'reason': 'Analysis completed',
+    })
+    assert transfer_back.status_code == 302
+    assert investigator_b_client.get(f'/evidence/{evidence_id}').status_code == 404
+    assert investigator_b_client.get(f'/evidence/{evidence_id}/download').status_code == 404
+
+
 def test_download_rejects_storage_path_outside_upload_root(isolated_case_app):
     app, users, _, evidence = isolated_case_app
     client = app.test_client()

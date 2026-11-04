@@ -8,7 +8,15 @@ from app.extensions import db
 from app.services.audit_service import log_audit_event
 from app.services.hashing import calculate_sha256
 from app.utils.decorators import role_required
-from app.utils.authorization import can_edit_case, case_for_user, visible_cases
+from app.utils.authorization import (
+    can_edit_case,
+    can_view_case,
+    case_for_user,
+    current_evidence_custodian,
+    evidence_for_user,
+    visible_evidence,
+    visible_cases,
+)
 import os
 import datetime
 import uuid
@@ -71,12 +79,19 @@ def add_custody_event(evidence, action, reason, notes=None, previous_custodian=N
 @login_required
 def index():
     query = request.args.get('q', '')
-    case_ids = [case.id for case in visible_cases(Case.query, current_user).all()]
-    evidence_query = Evidence.query.filter(Evidence.case_db_id.in_(case_ids))
+    evidence_query = visible_evidence(Evidence.query, current_user)
+    visible_case_ids = {
+        case_id for (case_id,) in visible_cases(Case.query, current_user).with_entities(Case.id).all()
+    }
     if query:
         evidence_query = evidence_query.filter(Evidence.name.ilike(f'%{query}%') | Evidence.evidence_id.ilike(f'%{query}%'))
     evidence = evidence_query.order_by(Evidence.created_at.desc()).all()
-    return render_template('evidence/index.html', evidence=evidence, query=query)
+    return render_template(
+        'evidence/index.html',
+        evidence=evidence,
+        query=query,
+        visible_case_ids=visible_case_ids,
+    )
 
 @evidence_bp.route('/upload/<case_id>', methods=['GET', 'POST'])
 @login_required
@@ -162,29 +177,30 @@ def upload(case_id):
 @evidence_bp.route('/<id>')
 @login_required
 def view(id):
-    evidence = Evidence.query.get_or_404(id)
-    case = case_for_user(evidence.case_db_id, current_user)
+    evidence = evidence_for_user(id, current_user)
+    case = evidence.case
     add_custody_event(evidence, 'EVIDENCE_VIEWED', 'Evidence details viewed')
     log_audit_event(current_user.id, current_user.role, 'EVIDENCE_VIEWED', 'Evidence', evidence.id, 'SUCCESS', f'Viewed evidence {evidence.evidence_id}')
     transfer_targets = []
     if current_user.role in ('ADMIN', 'INVESTIGATOR'):
-        investigators = User.query.filter_by(role='INVESTIGATOR', is_active=True)
-        if current_user.role != 'ADMIN':
-            authorized_ids = [case.created_by, case.assigned_to]
-            investigators = investigators.filter(User.id.in_(authorized_ids))
-        transfer_targets = investigators.order_by(User.full_name).all()
-    current_custody = CustodyEvent.query.filter_by(evidence_db_id=evidence.id).filter(
-        CustodyEvent.new_custodian.isnot(None)
-    ).order_by(CustodyEvent.timestamp.desc()).first()
-    current_custodian_id = current_custody.new_custodian if current_custody else evidence.collected_by
-    return render_template('evidence/view.html', evidence=evidence, transfer_targets=transfer_targets, current_custodian_id=current_custodian_id)
+        transfer_targets = User.query.filter_by(
+            role='INVESTIGATOR',
+            is_active=True,
+        ).order_by(User.full_name).all()
+    current_custodian_id = current_evidence_custodian(evidence)
+    return render_template(
+        'evidence/view.html',
+        evidence=evidence,
+        transfer_targets=transfer_targets,
+        current_custodian_id=current_custodian_id,
+        can_view_parent_case=can_view_case(current_user, case),
+    )
 
 @evidence_bp.route('/<id>/verify', methods=['POST'])
 @login_required
 @role_required('ADMIN', 'INVESTIGATOR', 'AUDITOR')
 def verify(id):
-    evidence = Evidence.query.get_or_404(id)
-    case_for_user(evidence.case_db_id, current_user)
+    evidence = evidence_for_user(id, current_user)
     try:
         current_hash = calculate_sha256(stored_file_path(evidence))
     except OSError:
@@ -216,8 +232,7 @@ def verify(id):
 @login_required
 @role_required('ADMIN', 'INVESTIGATOR')
 def download(id):
-    evidence = Evidence.query.get_or_404(id)
-    case_for_user(evidence.case_db_id, current_user)
+    evidence = evidence_for_user(id, current_user)
     path = stored_file_path(evidence)
     if not os.path.isfile(path):
         abort(404)
@@ -236,25 +251,21 @@ def download(id):
 @login_required
 @role_required('ADMIN', 'INVESTIGATOR')
 def transfer(id):
-    evidence = Evidence.query.get_or_404(id)
-    case = case_for_user(evidence.case_db_id, current_user)
-    if not can_edit_case(current_user, case):
+    evidence = evidence_for_user(id, current_user)
+    if not can_edit_case(current_user, evidence.case) and current_evidence_custodian(evidence) != current_user.id:
         abort(404)
 
     recipient_id = request.form.get('new_custodian', '')
     reason = request.form.get('reason', '').strip()
     recipient = User.query.filter_by(id=recipient_id, role='INVESTIGATOR', is_active=True).first()
-    if not recipient or (current_user.role != 'ADMIN' and recipient.id not in (case.created_by, case.assigned_to)) or not reason:
+    if not recipient or not reason:
         abort(400)
 
-    previous_event = CustodyEvent.query.filter_by(evidence_db_id=evidence.id).filter(
-        CustodyEvent.new_custodian.isnot(None)
-    ).order_by(CustodyEvent.timestamp.desc()).first()
-    previous_custodian = previous_event.new_custodian if previous_event else evidence.collected_by
+    previous_custodian = current_evidence_custodian(evidence)
     if previous_custodian == recipient.id:
         abort(400)
 
     add_custody_event(evidence, 'EVIDENCE_TRANSFERRED', reason, previous_custodian=previous_custodian, new_custodian=recipient.id)
     log_audit_event(current_user.id, current_user.role, 'EVIDENCE_TRANSFERRED', 'Evidence', evidence.id, 'SUCCESS', f'Transferred {evidence.evidence_id} to {recipient.email}: {reason}')
-    flash('Evidence custody transferred.', 'success')
+    flash('Evidence custody transferred. The new custodian can now access this evidence.', 'success')
     return redirect(url_for('evidence.view', id=evidence.id))

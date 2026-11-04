@@ -32,7 +32,13 @@
                     <tr>
                         <td>{{ ev.evidence_id }}</td>
                         <td>{{ ev.name }}</td>
-                        <td><a href="{{ url_for('cases.view', id=ev.case_db_id) }}" class="text-info text-decoration-none">{{ ev.case.case_id }}</a></td>
+                        <td>
+                            {% if ev.case_db_id in visible_case_ids %}
+                            <a href="{{ url_for('cases.view', id=ev.case_db_id) }}" class="text-info text-decoration-none">{{ ev.case.case_id }}</a>
+                            {% else %}
+                            {{ ev.case.case_id }}
+                            {% endif %}
+                        </td>
                         <td>{{ ev.evidence_type }}</td>
                         <td><span class="badge {% if ev.status == 'VERIFIED' %}badge-verified{% else %}bg-info{% endif %}">{{ ev.status }}</span></td>
                         <td>{{ ev.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</td>

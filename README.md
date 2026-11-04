@@ -26,7 +26,7 @@ This project is designed for modern cloud deployments:
 *   **Case Management:** Create, assign, and track investigation cases.
 *   **Evidence Registration & Secure Upload:** Safe file handling, automatic SHA-256 calculation.
 *   **Integrity Verification:** On-demand recalculation of evidence hashes to detect tampering.
-*   **Chain of Custody:** Immutable timeline tracking all evidence lifecycle events.
+*   **Chain of Custody:** Immutable timeline tracking evidence lifecycle events; custody transfers grant the new investigator access to that evidence only, not the whole case.
 *   **Audit Logging:** Centralized tracking of authentication, resource access, and system events.
 
 ## Jenkins Setup (Windows)
