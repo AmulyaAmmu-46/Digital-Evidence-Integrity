@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        ACR_NAME = "cyberforensicsacr"
+        ACR_NAME = "neoforensicsacr2026"
         IMAGE_NAME = "${ACR_NAME}.azurecr.io/digital-forensics-platform"
         IMAGE_TAG = "build-${BUILD_NUMBER}"
         TRIVY_IMAGE = "aquasec/trivy:0.75.0"
