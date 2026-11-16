@@ -58,7 +58,7 @@ if errorlevel 1 exit /b %errorlevel%
 @echo off
 docker save --output "%WORKSPACE%\\digital-evidence-image.tar" "%IMAGE_NAME%:%IMAGE_TAG%"
 if errorlevel 1 exit /b %errorlevel%
-docker run --rm --mount "type=bind,source=%WORKSPACE%,target=/work,readonly" "%TRIVY_IMAGE%" image --input /work/digital-evidence-image.tar --ignore-unfixed --exit-code 1 --severity HIGH,CRITICAL
+docker run --rm --mount "type=bind,source=%WORKSPACE%,target=/work,readonly" --mount "type=volume,source=trivy-cache,target=/cache" "%TRIVY_IMAGE%" --cache-dir /cache --timeout 30m image --input /work/digital-evidence-image.tar --ignore-unfixed --exit-code 1 --severity HIGH,CRITICAL
 if errorlevel 1 exit /b %errorlevel%
 '''
             }
