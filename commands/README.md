@@ -5,9 +5,7 @@ Open PowerShell and run these first-time setup commands:
 ## Local Development (Windows PowerShell)
 
 ```powershell
-Set-Location F:\Cyber\project
-.\.venv\Scripts\Activate.ps1
-python run.py
+
 ```
 
 The `seed.py` step is for first-time setup only. It creates missing database tables. Enter the administrator email, name, and password when prompted; password input is hidden.
@@ -67,3 +65,6 @@ Stop the containers while preserving database and upload volumes:
 ```powershell
 docker-compose down
 ```
+Set-Location F:\Cyber\project
+.\.venv\Scripts\Activate.ps1
+python run.py

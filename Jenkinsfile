@@ -67,8 +67,13 @@ if errorlevel 1 exit /b %errorlevel%
         stage('Push to Azure Container Registry') {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDENTIALS}", passwordVariable: 'ACR_PASSWORD', usernameVariable: 'ACR_USERNAME')]) {
-                    bat 'powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\\jenkins-push-acr.ps1'
-                    bat 'docker push "%IMAGE_NAME%:%IMAGE_TAG%"'
+                    bat '''
+@echo off
+echo %ACR_PASSWORD% | docker login "%ACR_NAME%.azurecr.io" -u "%ACR_USERNAME%" --password-stdin
+if errorlevel 1 exit /b %errorlevel%
+docker push "%IMAGE_NAME%:%IMAGE_TAG%"
+if errorlevel 1 exit /b %errorlevel%
+'''
                 }
             }
         }
